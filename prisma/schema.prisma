@@ -2,68 +2,131 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "sqlite"
-    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-    // Further reading:
-    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
-    url      = env("DATABASE_URL")
+  provider  = "postgres"
+  // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
+  // Further reading:
+  // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
+  // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model Example {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@index([name])
+enum JuzNumber {
+  JUZ_1
+  JUZ_2
+  JUZ_3
+  JUZ_4
+  JUZ_5
+  JUZ_6
+  JUZ_7
+  JUZ_8
+  JUZ_9
+  JUZ_10
+  JUZ_11
+  JUZ_12
+  JUZ_13
+  JUZ_14
+  JUZ_15
+  JUZ_16
+  JUZ_17
+  JUZ_18
+  JUZ_19
+  JUZ_20
+  JUZ_21
+  JUZ_22
+  JUZ_23
+  JUZ_24
+  JUZ_25
+  JUZ_26
+  JUZ_27
+  JUZ_28
+  JUZ_29
+  JUZ_30
 }
+
+model Khatm {
+  id                String    @id @default(uuid())
+  selectedJuzNumbers JuzNumber[]
+  createdAt         DateTime  @default(now())
+  totalJuzCount     Int       @default(0)
+  completedCount    Int       @default(0)
+  isComplete        Boolean   @default(false)
+  juzes             Juz[]     @relation("KhatmJuzes") // Named relation for Juz
+  totalContributors Int? // Optional: Count of unique contributors for each Khatm
+  contributors      User[]    @relation("KhatmContributors") // Named relation for contributors
+
+  @@index([isComplete]) // Index to optimize querying by completion statu
+}
+
+model KhatmStats {
+  id             Int @id @default(1)
+  totalCompleted Int @default(0)
+}
+
+model Juz {
+  id        String    @id @default(uuid())
+  juzNumber JuzNumber
+  createdAt DateTime  @default(now())
+
+  // Foreign key to Khatm with constraint name
+  khatmId String? @map("khatm_id")
+  khatm   Khatm?  @relation("KhatmJuzes", fields: [khatmId], references: [id], onDelete: Cascade)
+
+  // Foreign key to User with constraint name
+  userId String? @map("user_id")
+  user   User?   @relation("UserJuzes", fields: [userId], references: [id]) // Named relation to User
+}
+
 
 // Necessary for Next auth
 model Account {
-    id                String  @id @default(cuid())
-    userId            String
-    type              String
-    provider          String
-    providerAccountId String
-    refresh_token     String? // @db.Text
-    access_token      String? // @db.Text
-    expires_at        Int?
-    token_type        String?
-    scope             String?
-    id_token          String? // @db.Text
-    session_state     String?
-    user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? // @db.Text
+  access_token      String? // @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? // @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    @@unique([provider, providerAccountId])
+  @@unique([provider, providerAccountId])
 }
 
 model Session {
-    id           String   @id @default(cuid())
-    sessionToken String   @unique
-    userId       String
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    accounts      Account[]
-    sessions      Session[]
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  accounts      Account[]
+  sessions      Session[]
+  juzes         Juz[]     @relation("UserJuzes") // Named relation for Juzes
+  // Relationship to Khatm
+  khatms        Khatm[]   @relation("KhatmContributors") // Named relation for Khatm
 }
 
 model VerificationToken {
-    identifier String
-    token      String   @unique
-    expires    DateTime
+  identifier String
+  token      String   @unique
+  expires    DateTime
 
-    @@unique([identifier, token])
+  @@unique([identifier, token])
 }
